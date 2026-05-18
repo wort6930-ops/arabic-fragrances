@@ -1,0 +1,63 @@
+name: Test Cloudflare R2 Connection
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-cf-connection:
+    runs-on: ubuntu-latest
+    env:
+      CF_R2_BUCKET_NAME: ${{ secrets.CF_R2_BUCKET_NAME }}
+      CF_R2_ENDPOINT_URL: ${{ secrets.CF_R2_ENDPOINT_URL }}
+      CF_R2_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+      CF_R2_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install boto3
+
+      - name: Test Cloudflare R2 connection
+        run: |
+          python - <<'EOF'
+          import os
+          import sys
+          import boto3
+          from botocore.config import Config
+
+          bucket    = os.environ["CF_R2_BUCKET_NAME"]
+          endpoint  = os.environ["CF_R2_ENDPOINT_URL"]
+          access_key = os.environ["CF_R2_ACCESS_KEY_ID"]
+          secret_key = os.environ["CF_R2_SECRET_ACCESS_KEY"]
+
+          print(f"Endpoint : {endpoint}")
+          print(f"Bucket   : {bucket}")
+
+          client = boto3.client(
+              "s3",
+              endpoint_url=endpoint,
+              aws_access_key_id=access_key,
+              aws_secret_access_key=secret_key,
+              config=Config(
+                  signature_version="s3v4",
+                  s3={"addressing_style": "path"},
+              ),
+              region_name="auto",
+          )
+
+          try:
+              response = client.list_objects_v2(Bucket=bucket, MaxKeys=1)
+              count = response.get("KeyCount", 0)
+              print("✅  Connection successful — bucket is accessible.")
+              print(f"Objects found (sample up to 1): {count}")
+          except Exception as e:
+              print(f"❌  Connection failed: {e}")
+              sys.exit(1)
+          EOF
