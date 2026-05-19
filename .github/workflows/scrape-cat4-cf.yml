@@ -39,7 +39,7 @@ jobs:
           CF_R2_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
           CF_R2_BUCKET_NAME: ${{ secrets.CF_R2_BUCKET_NAME }}
           CF_R2_ENDPOINT_URL: ${{ secrets.CF_R2_ENDPOINT_URL }}
-          PYTHONPATH: ${{ github.workspace }}/CF
+        working-directory: CF  
         run: |
           python -m ${{ matrix.module }}.main
 
